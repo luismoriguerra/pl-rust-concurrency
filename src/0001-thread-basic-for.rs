@@ -3,6 +3,7 @@ use std::{thread, time::Duration};
 fn main() {
     thread::spawn(|| {
         for i in 1..11 {
+            // this never finish to count to 10
             println!("Hello from a thread! {}", i);
             thread::sleep(Duration::from_secs(2));
         }
