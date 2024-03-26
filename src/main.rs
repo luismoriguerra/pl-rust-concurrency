@@ -1,20 +1,53 @@
-use std::{thread, time::Duration};
+use std::{
+    fs::File,
+    io::{self, BufRead},
+    thread,
+    time::{Duration, Instant},
+};
 
 fn main() {
-    let handler = thread::spawn(|| {
-        for i in 1..11 {
-            println!("Hello from a thread! {}", i);
-            //blocking function
-            thread::sleep(Duration::from_secs(2));
-        }
-    });
+    let common_words = vec![
+        "the", "be", "to", "of", "and", "a", "in", "that", "have", "I",
+    ];
 
-    println!("Hello from main!");
-    for i in 1..11 {
-        println!("Hello from main! {}", i);
-        thread::sleep(Duration::from_secs(1));
+    let total_start = Instant::now();
+    let mut children = vec![];
+
+    for common_word in common_words.iter().cloned() {
+        let child = thread::spawn(move || {
+            let start = Instant::now();
+            let file = File::open("text.txt").expect("file not found");
+            let reader = io::BufReader::new(file);
+
+            let mut count = 0;
+
+            for line in reader.lines() {
+                let line = line.expect("line not found");
+                let words = line.split_whitespace();
+
+                for word in words {
+                    if word.to_lowercase() == common_word {
+                        count += 1;
+                    }
+                }
+            }
+
+            let duration = start.elapsed();
+            println!(
+                "The word '{}' appears {} times in the file. Time elapsed: {:?}",
+                common_word,
+                count,
+                duration.as_millis()
+            );
+        });
+
+        children.push(child);
     }
-    //blocking function
-    handler.join().unwrap();
-    println!("Thread finished!");
+
+    for child in children {
+        child.join().unwrap();
+    }
+
+    let duration = total_start.elapsed();
+    println!("Total time elapsed: {:?}", duration.as_millis());
 }
